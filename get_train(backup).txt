@@ -1,0 +1,77 @@
+import numpy as np
+from mss.windows import MSS as mss
+import mss.tools
+import cv2
+import time
+from KeyPress import PressKey, ReleaseKey, W, A, S, D
+import os
+import keyboard
+begin_time=time.time()
+
+file='training_data_2.npy'
+if os.path.isfile(file):
+    print('file exists, loading previous data!')
+    training_data=list(np.load(file))
+else:
+    print('File not found, starting fresh')
+    training_data=[]
+
+for i in list(range(1,4))[::-1]:
+    print(i)
+    time.sleep(1)
+
+def keypress():
+    #[W,A,S,D,WA,WD,SA,SD]
+    keypress=[0,0,0,0,0,0,0,0]
+    if keyboard.is_pressed('w') and keyboard.is_pressed('a'):
+        keypress[4]=1
+    elif keyboard.is_pressed('w') and keyboard.is_pressed('d'):
+        keypress[5]=1
+    elif keyboard.is_pressed('s') and keyboard.is_pressed('a'):
+        keypress[6]=1
+    elif keyboard.is_pressed('s') and keyboard.is_pressed('d'):
+        keypress[7]=1
+    elif keyboard.is_pressed('w'):
+       keypress[0]=1
+    elif keyboard.is_pressed('a'):
+        keypress[1]=1
+    elif keyboard.is_pressed('s'):
+        keypress[2]=1
+    elif keyboard.is_pressed('d'):
+        keypress[3]=1
+    return keypress
+
+def main():
+  a=0
+  with mss.mss() as sct:
+    monitor = {"top": 40, "left": 0, "width": 640, "height": 400}
+    #crop= cv2.selectROI(np.array(sct.grab(monitor)), False,False)
+    while "Screen capturing":
+        last_time = time.time()
+        img = np.array(sct.grab(monitor))
+        img = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        #img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        img=cv2.resize(img,(84,84))
+        #print(keypress())
+        img =np.true_divide(img, 255)
+        training_data.append([img,keypress()]) 
+        if len(training_data) % 25000==0:
+            print(len(training_data))
+            np.save(file,training_data)
+            print("done saving")
+            while True:
+                print("Paused. press o to resume.")
+                if keyboard.is_pressed('o'):
+                    print("Get_data resumed!")
+                    break
+        #if len(training_data)>=25000:
+          # break
+        if keyboard.is_pressed('p'):
+            print("Get_data paused!....press o to resume.")
+            while True:
+                if keyboard.is_pressed('o'):
+                    print("Get_data resumed!")
+                    break
+        if keyboard.is_pressed('q'):
+            break
+main()
